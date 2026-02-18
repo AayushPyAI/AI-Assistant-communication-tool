@@ -10,12 +10,12 @@ export default function ContextPanel() {
   const recentTranscript = transcript.slice(-5).reverse();
 
   return (
-    <div className="flex flex-col h-full bg-white border border-zinc-200 rounded-lg shadow-sm">
-      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-zinc-200 bg-zinc-50/50">
+    <div className="flex flex-col h-full bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
+      <div className="px-3 sm:px-4 lg:px-5 py-2 sm:py-3 lg:py-4 border-b border-zinc-200 bg-zinc-50/50 flex-shrink-0">
         <h3 className="text-xs sm:text-sm font-semibold text-zinc-900">Context & History</h3>
       </div>
       
-      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4 sm:space-y-5 bg-zinc-50/30">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 space-y-3 sm:space-y-4 lg:space-y-5 bg-zinc-50/30 min-h-0">
         <div>           
           <div className="flex items-center gap-2 mb-2 sm:mb-3">
             <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-md bg-zinc-100 flex items-center justify-center">

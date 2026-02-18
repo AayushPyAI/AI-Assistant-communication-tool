@@ -15,8 +15,8 @@ export default function LiveTranscript() {
   }, [transcript]);
 
   return (
-    <div className="flex flex-col h-full bg-white border border-blue-200/50 rounded-lg shadow-sm">
-      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-blue-200/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 flex items-center gap-2 sm:gap-2.5">
+    <div className="flex flex-col h-full bg-white border border-blue-200/50 rounded-lg shadow-sm overflow-hidden">
+      <div className="px-4 sm:px-5 py-3 sm:py-4 border-b border-blue-200/50 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
         <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center border border-blue-200/50">
           <Mic className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
         </div>
@@ -25,7 +25,7 @@ export default function LiveTranscript() {
       
       <div
         ref={scrollRef}
-        className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4 min-h-[300px] sm:min-h-[400px] bg-gradient-to-b from-blue-50/20 to-indigo-50/10"
+        className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-5 space-y-3 sm:space-y-4 bg-gradient-to-b from-blue-50/20 to-indigo-50/10 min-h-0"
       >
         {transcript.length === 0 ? (
           <div className="text-center text-zinc-500 py-12 sm:py-16">

@@ -4,6 +4,7 @@ import { CallSession, TranscriptEntry, AIResponse, CallNote } from '@/app/types/
 interface CallStore {
   currentSession: CallSession | null;
   isCallActive: boolean;
+  callDuration: number; 
   
   transcript: TranscriptEntry[];
   addTranscriptEntry: (entry: Omit<TranscriptEntry, 'id' | 'timestamp'>) => void;
@@ -18,6 +19,7 @@ interface CallStore {
   endCall: () => void;
   pauseCall: () => void;
   resumeCall: () => void;
+  incrementDuration: () => void;
   
   selectedPanel: 'transcript' | 'notes' | 'responses';
   setSelectedPanel: (panel: 'transcript' | 'notes' | 'responses') => void;
@@ -26,6 +28,7 @@ interface CallStore {
 export const useCallStore = create<CallStore>((set) => ({
   currentSession: null,
   isCallActive: false,
+  callDuration: 0,
   transcript: [],
   aiResponses: [],
   notes: [],
@@ -63,6 +66,7 @@ export const useCallStore = create<CallStore>((set) => ({
       status: 'active',
     },
     isCallActive: true,
+    callDuration: 0,
     transcript: [],
     aiResponses: [],
     notes: [],
@@ -89,6 +93,10 @@ export const useCallStore = create<CallStore>((set) => ({
       status: 'active',
     } : null,
     isCallActive: true,
+  })),
+  
+  incrementDuration: () => set((state) => ({
+    callDuration: state.callDuration + 1,
   })),
   
   setSelectedPanel: (panel) => set({ selectedPanel: panel }),
