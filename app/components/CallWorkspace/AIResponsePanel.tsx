@@ -1,100 +1,170 @@
 'use client';
 
 import { useCallStore } from '@/app/store/callStore';
-import { Sparkles, Copy, Check } from 'lucide-react';
-import { useState } from 'react';
+import { Sparkles, Copy, Check, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+
+// Typewriter hook
+function useTypewriter(text: string, speed = 18) {
+  const [displayed, setDisplayed] = useState('');
+  const [isDone, setIsDone] = useState(false);
+  const indexRef = useRef(0);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    setDisplayed('');
+    setIsDone(false);
+    indexRef.current = 0;
+
+    if (intervalRef.current) clearInterval(intervalRef.current);
+
+    intervalRef.current = setInterval(() => {
+      if (indexRef.current < text.length) {
+        setDisplayed(text.slice(0, indexRef.current + 1));
+        indexRef.current++;
+      } else {
+        setIsDone(true);
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      }
+    }, speed);
+
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [text, speed]);
+
+  return { displayed, isDone };
+}
 
 export default function AIResponsePanel() {
   const { aiResponses } = useCallStore();
-  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [hasNewResponse, setHasNewResponse] = useState(false);
+  const prevCountRef = useRef(0);
 
-  const handleCopy = (id: string, text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedId(id);
-    setTimeout(() => setCopiedId(null), 2000);
+  const latest = aiResponses[aiResponses.length - 1] ?? null;
+  const history = aiResponses.slice(0, -1).reverse();
+
+  const { displayed, isDone } = useTypewriter(latest?.response ?? '');
+
+  useEffect(() => {
+    if (aiResponses.length > prevCountRef.current && prevCountRef.current !== 0) {
+      setHasNewResponse(true);
+      const t = setTimeout(() => setHasNewResponse(false), 2000);
+      return () => clearTimeout(t);
+    }
+    prevCountRef.current = aiResponses.length;
+  }, [aiResponses.length]);
+
+  const handleCopy = () => {
+    if (!latest) return;
+    navigator.clipboard.writeText(latest.response);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   return (
-    <div className="flex flex-col h-full bg-white border border-zinc-200 rounded-lg shadow-sm overflow-hidden">
-      <div className="px-3 sm:px-4 lg:px-5 py-2 sm:py-3 lg:py-4 border-b border-zinc-200 bg-zinc-50/50 flex items-center gap-2 sm:gap-2.5 flex-shrink-0">
-        <div className="w-6 h-6 sm:w-7 sm:h-7 lg:w-8 lg:h-8 rounded-lg bg-zinc-100 flex items-center justify-center">
-          <Sparkles className="w-3 h-3 sm:w-3.5 sm:h-3.5 lg:w-4 lg:h-4 text-zinc-700" />
+    <div className="flex flex-col h-full bg-white">
+
+      {/* Header — minimal */}
+      <div className="px-8 py-4 border-b border-zinc-100 flex items-center justify-between flex-shrink-0">
+        <div className="flex items-center gap-2.5">
+          <Sparkles className="w-4 h-4 text-zinc-400" />
+          <span className="text-sm font-medium text-zinc-700">AI Suggestion</span>
+          {latest && (
+            <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border transition-all duration-500 ${
+              hasNewResponse
+                ? 'bg-emerald-50 border-emerald-200 text-emerald-600'
+                : 'bg-zinc-50 border-zinc-200 text-zinc-400'
+            }`}>
+              {hasNewResponse ? '● Updated' : latest.prompt}
+            </span>
+          )}
         </div>
-        <h3 className="text-xs sm:text-sm font-semibold text-zinc-900">AI Responses</h3>
-        {aiResponses.length > 0 && (
-          <span className="ml-auto px-1.5 sm:px-2 py-0.5 text-[10px] sm:text-xs font-medium bg-zinc-200 text-zinc-700 rounded-full">
-            {aiResponses.length}
-          </span>
+
+        {latest && (
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-1.5 text-xs text-zinc-400 hover:text-zinc-700 px-3 py-1.5 rounded-md hover:bg-zinc-50 transition-colors"
+            >
+              {copied
+                ? <><Check className="w-3.5 h-3.5 text-emerald-500" /><span className="text-emerald-500">Copied</span></>
+                : <><Copy className="w-3.5 h-3.5" /><span>Copy</span></>
+              }
+            </button>
+          </div>
         )}
       </div>
-      
-      <div className="flex-1 overflow-y-auto p-2 sm:p-3 lg:p-4 space-y-2 sm:space-y-3 bg-zinc-50/30 min-h-0">
-        {aiResponses.length === 0 ? (
-          <div className="text-center text-zinc-500 py-8 sm:py-12">
-            <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-full bg-zinc-100 flex items-center justify-center mx-auto mb-3 sm:mb-4">
-              <Sparkles className="w-6 h-6 sm:w-8 sm:h-8 text-zinc-400" />
+
+      {/* Main suggestion — teleprompter */}
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+        {!latest ? (
+          <div className="flex-1 flex flex-col items-center justify-center px-12 text-center">
+            <div className="w-10 h-10 rounded-xl bg-zinc-50 border border-zinc-100 flex items-center justify-center mb-4">
+              <Sparkles className="w-5 h-5 text-zinc-300" />
             </div>
-            <p className="text-xs sm:text-sm font-medium">No AI responses yet</p>
-            <p className="text-[10px] sm:text-xs text-zinc-400 mt-1">Use prompts to generate insights</p>
+            <p className="text-sm text-zinc-400 font-medium">Waiting for the client to speak</p>
+            <p className="text-xs text-zinc-300 mt-1.5">
+              A suggestion will appear here automatically
+            </p>
           </div>
         ) : (
-          aiResponses.map((response) => (
-            <div
-              key={response.id}
-              className="border border-zinc-200 rounded-lg p-3 sm:p-4 bg-white shadow-sm hover:shadow transition-shadow"
-            >
-              <div className="flex items-start justify-between mb-2 sm:mb-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] sm:text-xs font-semibold text-zinc-700 mb-1 sm:mb-1.5 uppercase tracking-wide">
-                    Prompt:
-                  </p>
-                  <p className="text-[10px] sm:text-xs text-zinc-600 italic mb-2 sm:mb-3 leading-relaxed truncate">
-                    "{response.prompt}"
-                  </p>
-                </div>
-                <button
-                  onClick={() => handleCopy(response.id, response.response)}
-                  className="p-1 sm:p-1.5 hover:bg-zinc-100 rounded-md transition-colors flex-shrink-0 ml-2"
-                  title="Copy response"
-                >
-                  {copiedId === response.id ? (
-                    <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-green-600" />
-                  ) : (
-                    <Copy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-zinc-500" />
-                  )}
-                </button>
-              </div>
-              
-              <div className="mb-2 sm:mb-3">
-                <p className="text-[10px] sm:text-xs font-semibold text-zinc-700 mb-1 sm:mb-2 uppercase tracking-wide">
-                  Response:
-                </p>
-                <p className="text-xs sm:text-sm text-zinc-900 whitespace-pre-wrap leading-relaxed">
-                  {response.response}
-                </p>
-              </div>
-              
-              {response.context && response.context.length > 0 && (
-                <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t border-zinc-200">
-                  <p className="text-[10px] sm:text-xs text-zinc-500 mb-1 sm:mb-2 font-medium">Context:</p>
-                  <div className="flex flex-wrap gap-1 sm:gap-1.5">
-                    {response.context.map((ctx, idx) => (
-                      <span
-                        key={idx}
-                        className="text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 bg-zinc-100 rounded-md text-zinc-600 border border-zinc-200"
-                      >
-                        {ctx.substring(0, 20)}...
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              <p className="text-[10px] sm:text-xs text-zinc-400 mt-2 sm:mt-3">
-                {response.timestamp.toLocaleTimeString()}
+          <>
+            {/* The suggestion text — hero of the UI */}
+            <div className="flex-1 px-8 py-8 overflow-y-auto">
+              <p className="text-[22px] leading-[1.65] text-zinc-800 font-normal tracking-[-0.01em]">
+                {displayed}
+                {!isDone && (
+                  <span className="inline-block w-0.5 h-5 bg-zinc-400 ml-0.5 align-middle animate-pulse" />
+                )}
               </p>
             </div>
-          ))
+
+            {/* Footer — timestamp + history toggle */}
+            <div className="px-8 py-3 border-t border-zinc-100 flex items-center justify-between flex-shrink-0">
+              <span className="text-[11px] text-zinc-300">
+                {latest.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
+
+              {history.length > 0 && (
+                <button
+                  onClick={() => setShowHistory(!showHistory)}
+                  className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-600 transition-colors"
+                >
+                  {showHistory ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                  {showHistory ? 'Hide' : `${history.length} previous`}
+                </button>
+              )}
+            </div>
+
+            {/* History drawer — slides up from bottom */}
+            {showHistory && (
+              <div className="border-t border-zinc-100 max-h-48 overflow-y-auto bg-zinc-50/50">
+                {history.map((r, i) => (
+                  <div
+                    key={r.id}
+                    className="px-8 py-3 border-b border-zinc-100 last:border-0 hover:bg-zinc-50 transition-colors group"
+                  >
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-medium text-zinc-400 uppercase tracking-wide">
+                          {r.prompt}
+                        </span>
+                        <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2 leading-relaxed">
+                          {r.response}
+                        </p>
+                      </div>
+                      <span className="text-[10px] text-zinc-300 flex-shrink-0 mt-0.5">
+                        {r.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
